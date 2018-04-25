@@ -1,9 +1,34 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import * as PIXI from 'pixi.js';
 import {DevicesService} from "./devices.service";
 import {Observable} from "rxjs/Observable";
 
+import * as PIXI from 'pixi.js';
+
 // FIXME использовать ng-packagr для упаковки в модули
+
+interface Color {
+  r: number;
+  g: number;
+  b: number;
+}
+
+interface YCrCbColor {
+  y: number;
+  cr: number;
+  cb: number;
+}
+
+const retranslate = (color: Color): YCrCbColor => {
+  let y = 0.2989 * color.r + 0.5866 * color.g + 0.1145 * color.b;
+  let cr = 0.7132 * (color.r - y);
+  let cb = 0.5647 * (color.b - y);
+
+  return {
+    y,
+    cr,
+    cb
+  }
+};
 
 
 /**
@@ -80,6 +105,30 @@ const initCameraTexture = (camVideo: HTMLVideoElement, appWidth: number, appHeig
   });
 };
 
+const fragmentShader = `
+varying vec2 vTextureCoord;
+
+uniform float thresholdSensitivity;
+uniform float smoothing;
+uniform float y;
+uniform float cb;
+uniform float cr;
+
+uniform sampler2D uSampler;
+
+void main() {
+    vec4 textureColor = texture2D(uSampler, vTextureCoord);
+
+    float Y = 0.2989 * textureColor.r + 0.5866 * textureColor.g + 0.1145 * textureColor.b;
+    float Cr = 0.7132 * (textureColor.r - y);
+    float Cb = 0.5647 * (textureColor.b - y);
+
+    float blendValue = smoothstep(thresholdSensitivity, smoothing + thresholdSensitivity, distance(vec2(Cr, Cb), vec2(cr, cb)));
+
+    gl_FragColor = vec4(textureColor.rgb, textureColor.a * blendValue);
+}
+`;
+
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
@@ -115,6 +164,40 @@ export class AppComponent implements OnInit {
       initCameraTexture(this.devicesService.video, this.app.renderer.width,
         this.app.renderer.height, backSprite.height).subscribe(camSprite => {
         backSprite.camSprite = 1;
+
+        const color = retranslate({
+          r: 0,
+          g: 1,
+          b: 0
+        });
+
+        console.log(color);
+
+        const filter = new PIXI.Filter(null, fragmentShader, {
+          thresholdSensitivity: {
+            type: 'f',
+            value: .08
+          },
+          smoothing: {
+            type: 'f',
+            value: .04
+          },
+          y: {
+            type: 'f',
+            value: color.y
+          },
+          cb: {
+            type: 'f',
+            value: color.cb
+          },
+          cr: {
+            type: 'f',
+            value: color.cr
+          },
+        });
+
+        camSprite.filters = [ filter ];
+
         this.app.stage.addChild(camSprite);
       });
     });
