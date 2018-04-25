@@ -23,6 +23,9 @@ export class AppComponent implements OnInit {
   canvasWidth = 800;
   canvasHeight = 600;
 
+  private videoSprite: PIXI.Sprite = null;
+  private cameraSprite: PIXI.Sprite = null;
+
 
   constructor(private devicesService: DevicesService) {
   }
@@ -35,14 +38,19 @@ export class AppComponent implements OnInit {
       height: this.canvasHeight
     });
 
+    this.initVideoTexture();
+    this.initCameraSprite();
+  }
+
+  private initVideoTexture() {
     const videoTex = PIXI.Texture.fromVideoUrl(this.videoUrls[0]);
-    let videoBaseTexture = videoTex.baseTexture as PIXI.VideoBaseTexture;
-    videoBaseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
+
+    const videoBaseTexture = videoTex.baseTexture as PIXI.VideoBaseTexture;
 
     videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
-      const sprite = new PIXI.Sprite(videoTex);
+      this.videoSprite = new PIXI.Sprite(videoTex);
 
-      this.app.stage.addChild(sprite);
+      this.app.stage.addChild(this.videoSprite);
 
       const videoWidth = videoBaseTexture.source.videoWidth;
       const videoHeight = videoBaseTexture.source.videoHeight;
@@ -50,18 +58,41 @@ export class AppComponent implements OnInit {
       videoBaseTexture.source.muted = true;
 
       if (this.app.renderer.width / this.app.renderer.height < videoWidth / videoHeight) {
-        sprite.width = this.app.renderer.width;
-        sprite.height = (videoHeight / videoWidth) * this.app.renderer.width;
+        this.videoSprite.width = this.app.renderer.width;
+        this.videoSprite.height = (videoHeight / videoWidth) * this.app.renderer.width;
       } else {
-        sprite.width = (videoWidth / videoHeight) * this.app.renderer.height;
-        sprite.height = this.app.renderer.height;
+        this.videoSprite.width = (videoWidth / videoHeight) * this.app.renderer.height;
+        this.videoSprite.height = this.app.renderer.height;
       }
 
-      sprite.anchor.x = .5;
-      sprite.anchor.y = .5;
+      this.videoSprite.anchor.x = .5;
+      this.videoSprite.anchor.y = .5;
 
-      sprite.x = this.app.renderer.width / 2;
-      sprite.y = this.app.renderer.height / 2;
+      this.videoSprite.x = this.app.renderer.width / 2;
+      this.videoSprite.y = this.app.renderer.height / 2;
     });
+  }
+
+  private initCameraSprite() {
+    const camTex = PIXI.Texture.fromVideo(this.devicesService.video);
+    const videoBaseTexture = camTex.baseTexture as PIXI.VideoBaseTexture;
+    videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
+      this.cameraSprite = new PIXI.Sprite(camTex);
+
+      this.app.stage.addChild(this.cameraSprite);
+
+      const videoWidth = videoBaseTexture.source.videoWidth;
+      const videoHeight = videoBaseTexture.source.videoHeight;
+
+      this.cameraSprite.width = 200;
+      this.cameraSprite.height = 200 / (videoWidth / videoHeight);
+
+      this.cameraSprite.anchor.x = 1;
+      this.cameraSprite.anchor.y = 1;
+
+      this.cameraSprite.x = this.app.renderer.width;
+      this.cameraSprite.y = this.app.renderer.height - (this.app.renderer.height - this.videoSprite.height) / 2;
+    });
+
   }
 }
