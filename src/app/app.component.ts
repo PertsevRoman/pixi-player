@@ -24,13 +24,15 @@ export class AppComponent implements OnInit {
       view: this.canvas.nativeElement
     });
 
-    PIXI.loader.add(`video`, this.videoUrls[0]).load((loader, resources) => {
-      const sprite = new PIXI.Sprite(resources.video.texture);
+    const videoTex = PIXI.Texture.fromVideoUrl(this.videoUrls[0]);
+    let videoBaseTexture = videoTex.baseTexture as PIXI.VideoBaseTexture;
+    videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
+      const sprite = new PIXI.Sprite(videoTex);
 
       this.app.stage.addChild(sprite);
 
-      sprite.width = sprite.texture.width;
-      sprite.height = sprite.texture.height;
+      sprite.width = videoBaseTexture.source.videoWidth;
+      sprite.height = videoBaseTexture.source.videoHeight;
 
       sprite.anchor.x = .5;
       sprite.anchor.y = .5;
