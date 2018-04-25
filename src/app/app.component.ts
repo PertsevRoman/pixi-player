@@ -1,8 +1,84 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import * as PIXI from 'pixi.js';
 import {DevicesService} from "./devices.service";
+import {Observable} from "rxjs/Observable";
 
 // FIXME использовать ng-packagr для упаковки в модули
+
+
+/**
+ *
+ * @param url
+ * @param rendererWidth
+ * @param rendererHeight
+ * @param muted
+ * @return {Observable<PIXI.Sprite>}
+ */
+const initVideoTexture = (url: string, rendererWidth: number, rendererHeight: number, muted = false): Observable<PIXI.Sprite> => {
+  return Observable.create(observer => {
+    const texture = PIXI.Texture.fromVideoUrl(url);
+
+    const videoBaseTexture = texture.baseTexture as PIXI.VideoBaseTexture;
+
+    videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
+      const videoSprite = new PIXI.Sprite(texture);
+
+      const videoWidth = videoBaseTexture.source.videoWidth;
+      const videoHeight = videoBaseTexture.source.videoHeight;
+
+      videoBaseTexture.source.muted = muted;
+
+      if (rendererWidth / rendererHeight < videoWidth / videoHeight) {
+        videoSprite.width = rendererWidth;
+        videoSprite.height = (videoHeight / videoWidth) * rendererWidth;
+      } else {
+        videoSprite.width = (videoWidth / videoHeight) * rendererHeight;
+        videoSprite.height = rendererHeight;
+      }
+
+      videoSprite.anchor.x = .5;
+      videoSprite.anchor.y = .5;
+
+      videoSprite.x = rendererWidth / 2;
+      videoSprite.y = rendererHeight / 2;
+
+      observer.next(videoSprite);
+    });
+  });
+};
+
+/**
+ *
+ * @param {HTMLVideoElement} camVideo
+ * @param {number} appWidth
+ * @param {number} appHeight
+ * @param {number} backgroundHeight
+ * @return {any}
+ */
+const initCameraTexture = (camVideo: HTMLVideoElement, appWidth: number, appHeight: number, backgroundHeight: number) => {
+  return Observable.create(observer => {
+    const camTex = PIXI.Texture.fromVideo(camVideo);
+    const videoBaseTexture = camTex.baseTexture as PIXI.VideoBaseTexture;
+
+    videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
+      const cameraSprite = new PIXI.Sprite(camTex);
+
+      const videoWidth = videoBaseTexture.source.videoWidth;
+      const videoHeight = videoBaseTexture.source.videoHeight;
+
+      cameraSprite.width = 200;
+      cameraSprite.height = 200 / (videoWidth / videoHeight);
+
+      cameraSprite.anchor.x = 1;
+      cameraSprite.anchor.y = 1;
+
+      cameraSprite.x = appWidth;
+      cameraSprite.y = appHeight - (appHeight - backgroundHeight) / 2;
+
+      observer.next(cameraSprite);
+    });
+  });
+};
 
 @Component({
   selector: 'app-root',
@@ -23,12 +99,7 @@ export class AppComponent implements OnInit {
   canvasWidth = 800;
   canvasHeight = 600;
 
-  private videoSprite: PIXI.Sprite = null;
-  private cameraSprite: PIXI.Sprite = null;
-
-
-  constructor(private devicesService: DevicesService) {
-  }
+  constructor(private devicesService: DevicesService) { }
 
   ngOnInit() {
     this.app = new PIXI.Application({
@@ -39,60 +110,15 @@ export class AppComponent implements OnInit {
     });
 
     this.initVideoTexture();
-    this.initCameraSprite();
   }
 
   private initVideoTexture() {
-    const videoTex = PIXI.Texture.fromVideoUrl(this.videoUrls[0]);
-
-    const videoBaseTexture = videoTex.baseTexture as PIXI.VideoBaseTexture;
-
-    videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
-      this.videoSprite = new PIXI.Sprite(videoTex);
-
-      this.app.stage.addChild(this.videoSprite);
-
-      const videoWidth = videoBaseTexture.source.videoWidth;
-      const videoHeight = videoBaseTexture.source.videoHeight;
-
-      videoBaseTexture.source.muted = true;
-
-      if (this.app.renderer.width / this.app.renderer.height < videoWidth / videoHeight) {
-        this.videoSprite.width = this.app.renderer.width;
-        this.videoSprite.height = (videoHeight / videoWidth) * this.app.renderer.width;
-      } else {
-        this.videoSprite.width = (videoWidth / videoHeight) * this.app.renderer.height;
-        this.videoSprite.height = this.app.renderer.height;
-      }
-
-      this.videoSprite.anchor.x = .5;
-      this.videoSprite.anchor.y = .5;
-
-      this.videoSprite.x = this.app.renderer.width / 2;
-      this.videoSprite.y = this.app.renderer.height / 2;
+    initVideoTexture(this.videoUrls[0], this.app.renderer.width, this.app.renderer.height, true).subscribe(backSprite => {
+      this.app.stage.addChild(backSprite);
+      initCameraTexture(this.devicesService.video, this.app.renderer.width,
+                this.app.renderer.height, backSprite.height).subscribe(camSprite => {
+        this.app.stage.addChild(camSprite);
+      });
     });
-  }
-
-  private initCameraSprite() {
-    const camTex = PIXI.Texture.fromVideo(this.devicesService.video);
-    const videoBaseTexture = camTex.baseTexture as PIXI.VideoBaseTexture;
-    videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
-      this.cameraSprite = new PIXI.Sprite(camTex);
-
-      this.app.stage.addChild(this.cameraSprite);
-
-      const videoWidth = videoBaseTexture.source.videoWidth;
-      const videoHeight = videoBaseTexture.source.videoHeight;
-
-      this.cameraSprite.width = 200;
-      this.cameraSprite.height = 200 / (videoWidth / videoHeight);
-
-      this.cameraSprite.anchor.x = 1;
-      this.cameraSprite.anchor.y = 1;
-
-      this.cameraSprite.x = this.app.renderer.width;
-      this.cameraSprite.y = this.app.renderer.height - (this.app.renderer.height - this.videoSprite.height) / 2;
-    });
-
   }
 }
