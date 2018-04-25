@@ -19,20 +19,38 @@ export class AppComponent implements OnInit {
     `/assets/nat.mp4`
   ];
 
+  canvasWidth = 800;
+  canvasHeight = 600;
+
   ngOnInit() {
     this.app = new PIXI.Application({
-      view: this.canvas.nativeElement
+      view: this.canvas.nativeElement,
+      antialias: true,
+      width: this.canvasWidth,
+      height: this.canvasHeight
     });
 
     const videoTex = PIXI.Texture.fromVideoUrl(this.videoUrls[0]);
     let videoBaseTexture = videoTex.baseTexture as PIXI.VideoBaseTexture;
+    videoBaseTexture.scaleMode = PIXI.SCALE_MODES.LINEAR;
+
     videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
       const sprite = new PIXI.Sprite(videoTex);
 
       this.app.stage.addChild(sprite);
 
-      sprite.width = videoBaseTexture.source.videoWidth;
-      sprite.height = videoBaseTexture.source.videoHeight;
+      const videoWidth = videoBaseTexture.source.videoWidth;
+      const videoHeight = videoBaseTexture.source.videoHeight;
+
+      videoBaseTexture.source.muted = true;
+
+      if (this.app.renderer.width / this.app.renderer.height < videoWidth / videoHeight) {
+        sprite.width = this.app.renderer.width;
+        sprite.height = (videoHeight / videoWidth) * this.app.renderer.width;
+      } else {
+        sprite.width = (videoWidth / videoHeight) * this.app.renderer.height;
+        sprite.height = this.app.renderer.height;
+      }
 
       sprite.anchor.x = .5;
       sprite.anchor.y = .5;
