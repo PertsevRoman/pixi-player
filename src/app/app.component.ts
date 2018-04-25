@@ -109,14 +109,12 @@ export class AppComponent implements OnInit {
       height: this.canvasHeight
     });
 
-    this.initVideoTexture();
-  }
-
-  private initVideoTexture() {
     initVideoTexture(this.videoUrls[0], this.app.renderer.width, this.app.renderer.height, true).subscribe(backSprite => {
       this.app.stage.addChild(backSprite);
+      backSprite.zOrder = 1;
       initCameraTexture(this.devicesService.video, this.app.renderer.width,
-                this.app.renderer.height, backSprite.height).subscribe(camSprite => {
+        this.app.renderer.height, backSprite.height).subscribe(camSprite => {
+        backSprite.camSprite = 1;
         this.app.stage.addChild(camSprite);
       });
     });
