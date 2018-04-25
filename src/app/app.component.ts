@@ -1,5 +1,6 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
 import * as PIXI from 'pixi.js';
+import {DevicesService} from "./devices.service";
 
 // FIXME использовать ng-packagr для упаковки в модули
 
@@ -21,6 +22,10 @@ export class AppComponent implements OnInit {
 
   canvasWidth = 800;
   canvasHeight = 600;
+
+
+  constructor(private devicesService: DevicesService) {
+  }
 
   ngOnInit() {
     this.app = new PIXI.Application({
