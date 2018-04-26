@@ -69,6 +69,11 @@ const makeAudioTrack = (audioDevice: AudioDeviceType): Observable<MediaStreamTra
   });
 };
 
+/**
+ *
+ * @param {VideoType} videoDevice
+ * @return {Observable<MediaStreamTrack>}
+ */
 const makeVideoTrack = (videoDevice: VideoType): Observable<MediaStreamTrack> => {
   return Observable.create(observer => {
     if (videoDevice == "fake") {
