@@ -7,6 +7,22 @@ import {forkJoin} from "rxjs/observable/forkJoin";
 
 const LOADED_METADATA_EVENT = `loadedmetadata`;
 
+
+/**
+ *
+ * @param {PIXI.Sprite} cameraSprite
+ * @return {}
+ */
+const getVideoSpriteOriginals = (cameraSprite: PIXI.Sprite) => {
+  const texture = cameraSprite.texture;
+  const baseTexture = texture.baseTexture as PIXI.VideoBaseTexture;
+
+  return {
+    videoWidth: baseTexture.source.videoWidth,
+    videoHeight: baseTexture.source.videoHeight
+  };
+};
+
 /**
  *
  * @param {PIXI.Sprite} backgroundSprite
@@ -14,11 +30,7 @@ const LOADED_METADATA_EVENT = `loadedmetadata`;
  * @param {number} rendererHeight
  */
 const backgroundPosite = function (backgroundSprite: PIXI.Sprite, rendererWidth: number, rendererHeight: number) {
-  const texture = backgroundSprite.texture;
-  const baseTexture = texture.baseTexture as PIXI.VideoBaseTexture;
-
-  const videoWidth = baseTexture.source.videoWidth;
-  const videoHeight = baseTexture.source.videoHeight;
+  const {videoWidth, videoHeight} = getVideoSpriteOriginals(backgroundSprite);
 
   if (rendererWidth / rendererHeight < videoWidth / videoHeight) {
     backgroundSprite.width = rendererWidth;
@@ -28,12 +40,13 @@ const backgroundPosite = function (backgroundSprite: PIXI.Sprite, rendererWidth:
     backgroundSprite.height = rendererHeight;
   }
 
-  backgroundSprite.anchor.x = .5;
-  backgroundSprite.anchor.y = .5;
+  backgroundSprite.anchor.set(.5, .5);
 
   backgroundSprite.x = rendererWidth / 2;
   backgroundSprite.y = rendererHeight / 2;
 };
+
+
 
 /**
  *
@@ -43,11 +56,7 @@ const backgroundPosite = function (backgroundSprite: PIXI.Sprite, rendererWidth:
  * @param {number} backgroundHeight
  */
 const cameraPosite = function (cameraSprite: PIXI.Sprite, rendererWidth: number, rendererHeight: number, backgroundHeight: number) {
-  const texture = cameraSprite.texture;
-  const baseTexture = texture.baseTexture as PIXI.VideoBaseTexture;
-
-  const videoWidth = baseTexture.source.videoWidth;
-  const videoHeight = baseTexture.source.videoHeight;
+  const {videoWidth, videoHeight} = getVideoSpriteOriginals(cameraSprite);
 
   const spriteWidth = rendererWidth / 4;
   cameraSprite.width = spriteWidth;
@@ -63,9 +72,6 @@ const cameraPosite = function (cameraSprite: PIXI.Sprite, rendererWidth: number,
 /**
  *
  * @param {HTMLVideoElement} video
- * @param {number} rendererWidth
- * @param {number} rendererHeight
- * @param {number} backgroundHeight
  * @return {any}
  */
 const initVideoTexture = (video: HTMLVideoElement) => {
@@ -126,6 +132,7 @@ export class AppComponent implements OnInit {
       makeUrlVideo(this.videoUrls[0], true),
       makeDeviceVideo("fake"),
     ).subscribe(([backVideo, camVideo]) => {
+      backVideo.muted = true;
       forkJoin<PIXI.Sprite, PIXI.Sprite>(
         initVideoTexture(backVideo),
         initVideoTexture(camVideo),
