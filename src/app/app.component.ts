@@ -31,6 +31,7 @@ const getVideoSpriteOriginals = (cameraSprite: PIXI.Sprite) => {
  */
 const backgroundPosite = function (backgroundSprite: PIXI.Sprite, rendererWidth: number, rendererHeight: number) {
   const {videoWidth, videoHeight} = getVideoSpriteOriginals(backgroundSprite);
+  backgroundSprite.anchor.set(.5, .5);
 
   if (rendererWidth / rendererHeight < videoWidth / videoHeight) {
     backgroundSprite.width = rendererWidth;
@@ -40,12 +41,9 @@ const backgroundPosite = function (backgroundSprite: PIXI.Sprite, rendererWidth:
     backgroundSprite.height = rendererHeight;
   }
 
-  backgroundSprite.anchor.set(.5, .5);
-
   backgroundSprite.x = rendererWidth / 2;
   backgroundSprite.y = rendererHeight / 2;
 };
-
 
 
 /**
@@ -54,19 +52,31 @@ const backgroundPosite = function (backgroundSprite: PIXI.Sprite, rendererWidth:
  * @param {number} rendererWidth
  * @param {number} rendererHeight
  * @param {number} backgroundHeight
+ * @param backgroundWidth
  */
-const cameraPosite = function (cameraSprite: PIXI.Sprite, rendererWidth: number, rendererHeight: number, backgroundHeight: number) {
+const cameraPosite = function (cameraSprite: PIXI.Sprite,
+                               rendererWidth: number,
+                               rendererHeight: number,
+                               backgroundHeight: number,
+                               backgroundWidth: number) {
   const {videoWidth, videoHeight} = getVideoSpriteOriginals(cameraSprite);
+  cameraSprite.anchor.set(1, 1);
 
-  const spriteWidth = rendererWidth / 4;
-  cameraSprite.width = spriteWidth;
-  cameraSprite.height = spriteWidth / (videoWidth / videoHeight);
+  if (rendererWidth / rendererHeight < videoWidth / videoHeight) {
+    const spriteWidth = rendererWidth / 4;
+    cameraSprite.width = spriteWidth;
+    cameraSprite.height = spriteWidth / (videoWidth / videoHeight);
 
-  cameraSprite.anchor.x = 1;
-  cameraSprite.anchor.y = 1;
+    cameraSprite.x = rendererWidth;
+    cameraSprite.y = rendererHeight - (rendererHeight - backgroundHeight) / 2;
+  } else {
+    const spriteHeight = rendererHeight / 4;
+    cameraSprite.height = spriteHeight;
+    cameraSprite.width = spriteHeight * (videoWidth / videoHeight);
 
-  cameraSprite.x = rendererWidth;
-  cameraSprite.y = rendererHeight - (rendererHeight - backgroundHeight) / 2;
+    cameraSprite.y = rendererHeight;
+    cameraSprite.x = rendererWidth - (rendererWidth - backgroundWidth) / 2;
+  }
 };
 
 /**
@@ -74,7 +84,7 @@ const cameraPosite = function (cameraSprite: PIXI.Sprite, rendererWidth: number,
  * @param {HTMLVideoElement} video
  * @return {any}
  */
-const initVideoTexture = (video: HTMLVideoElement) => {
+const makeVideoTexture = (video: HTMLVideoElement) => {
   return Observable.create(observer => {
     const texture = PIXI.Texture.fromVideo(video);
 
@@ -134,11 +144,11 @@ export class AppComponent implements OnInit {
     ).subscribe(([backVideo, camVideo]) => {
       backVideo.muted = true;
       forkJoin<PIXI.Sprite, PIXI.Sprite>(
-        initVideoTexture(backVideo),
-        initVideoTexture(camVideo),
+        makeVideoTexture(backVideo),
+        makeVideoTexture(camVideo),
       ).subscribe(([backSprite, camSprite]) => {
         backgroundPosite(backSprite, RENDERER_WIDTH, RENDERER_HEIGHT);
-        cameraPosite(camSprite, RENDERER_WIDTH, RENDERER_HEIGHT, backSprite.height);
+        cameraPosite(camSprite, RENDERER_WIDTH, RENDERER_HEIGHT, backSprite.height, backSprite.width);
 
         (backSprite as any).zOrder = 1;
         (camSprite as any).zOrder = 2;
