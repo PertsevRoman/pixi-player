@@ -3,6 +3,7 @@ import {DevicesService} from "./devices.service";
 import {Observable} from "rxjs/Observable";
 
 import * as PIXI from 'pixi.js';
+import {makeDeviceVideo} from "./device-fabric";
 
 const LOADED_METADATA_EVENT = `loadedmetadata`;
 
@@ -132,7 +133,7 @@ export class AppComponent implements OnInit {
   canvasWidth = 800;
   canvasHeight = 600;
 
-  constructor(private devicesService: DevicesService) { }
+  constructor() { }
 
   ngOnInit() {
     this.app = new PIXI.Application({
@@ -149,10 +150,13 @@ export class AppComponent implements OnInit {
       (backSprite as any).zOrder = 1;
       container.addChild(backSprite);
 
-      initCameraTexture(this.devicesService.video, this.app.renderer.width,
-        this.app.renderer.height, backSprite.height).subscribe(camSprite => {
-        (camSprite as any).zOrder = 2;
-        container.addChild(camSprite);
+
+      makeDeviceVideo("fake").subscribe(video => {
+        initCameraTexture(video, this.app.renderer.width,
+          this.app.renderer.height, backSprite.height).subscribe(camSprite => {
+          (camSprite as any).zOrder = 2;
+          container.addChild(camSprite);
+        });
       });
     });
   }

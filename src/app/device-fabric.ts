@@ -35,7 +35,8 @@ export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: Audio
 
       const videoReadyListener = () => {
         const fakeStream: MediaStream = captureStream(fakeVideo);
-        mediaStream.addTrack(fakeStream.getVideoTracks()[0]);
+        const videoTrack = fakeStream.getVideoTracks()[0];
+        mediaStream.addTrack(videoTrack);
       };
 
       if (fakeVideo.readyState) {
@@ -100,7 +101,7 @@ export const makeDeviceVideo = (videoDevice: VideoType, audioDevide: AudioDevice
       video.srcObject = mediaStream;
 
       const loadedVideoCallback = () => {
-        observer.next(mediaStream);
+        observer.next(video);
       };
 
       if (video.readyState) {
