@@ -1,9 +1,9 @@
 import {Component, ElementRef, OnInit, ViewChild} from '@angular/core';
-import {DevicesService} from "./devices.service";
 import {Observable} from "rxjs/Observable";
 
 import * as PIXI from 'pixi.js';
-import {makeDeviceVideo} from "./device-fabric";
+import {makeDeviceVideo, makeUrlVideo} from "./device-fabric";
+import {forkJoin} from "rxjs/observable/forkJoin";
 
 const LOADED_METADATA_EVENT = `loadedmetadata`;
 
@@ -51,23 +51,6 @@ const initBackgroundTexture = (video: HTMLVideoElement, rendererWidth: number, r
       videoBaseTexture.source.addEventListener(LOADED_METADATA_EVENT, videoReadyCallback);
     }
   });
-};
-
-/**
- *
- * @param url
- * @param rendererWidth
- * @param rendererHeight
- * @param muted
- * @return {Observable<PIXI.Sprite>}
- */
-const initVideoTexture = (url: string, rendererWidth: number, rendererHeight: number, muted = false): Observable<PIXI.Sprite> => {
-  const video = document.createElement('video');
-  video.setAttribute(`src`, url);
-  video.setAttribute('autoplay', `autoplay`);
-  video.setAttribute('loop', `loop`);
-
-  return initBackgroundTexture(video, rendererWidth, rendererHeight, muted);
 };
 
 /**
@@ -146,18 +129,20 @@ export class AppComponent implements OnInit {
     const container = new PIXI.Container();
     this.app.stage.addChild(container);
 
-    initVideoTexture(this.videoUrls[0], this.app.renderer.width, this.app.renderer.height, true).subscribe(backSprite => {
-      (backSprite as any).zOrder = 1;
-      container.addChild(backSprite);
-
-
-      makeDeviceVideo("fake").subscribe(video => {
-        initCameraTexture(video, this.app.renderer.width,
+    forkJoin(
+      makeUrlVideo(this.videoUrls[0], true),
+      makeDeviceVideo("fake"),
+    ).subscribe(([backVideo, camVideo]) => {
+      initBackgroundTexture(backVideo as HTMLVideoElement, this.app.renderer.width, this.app.renderer.height, true).subscribe(backSprite => {
+        initCameraTexture(camVideo as HTMLVideoElement, this.app.renderer.width,
           this.app.renderer.height, backSprite.height).subscribe(camSprite => {
-          (camSprite as any).zOrder = 2;
-          container.addChild(camSprite);
+            (backSprite as any).zOrder = 1;
+            (camSprite as any).zOrder = 2;
+
+            container.addChild(backSprite);
+            container.addChild(camSprite);
         }, err => {
-            console.error(err);
+          console.error(err);
         });
       });
     });

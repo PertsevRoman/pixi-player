@@ -126,6 +126,7 @@ export const makeDeviceVideo = (videoDevice: VideoType, audioDevide: AudioDevice
 
       const loadedVideoCallback = () => {
         observer.next(video);
+        observer.complete();
       };
 
       if (video.readyState) {
@@ -134,5 +135,32 @@ export const makeDeviceVideo = (videoDevice: VideoType, audioDevide: AudioDevice
         video.addEventListener('loadedmetadata', loadedVideoCallback);
       }
     });
+  });
+};
+
+/**
+ *
+ * @param {string} url
+ * @param autoplay
+ */
+export const makeUrlVideo = (url: string, autoplay = false) => {
+  return Observable.create(observer => {
+    const video = document.createElement('video');
+    if (autoplay) {
+      video.setAttribute('autoplay', `autoplay`);
+    }
+
+    video.setAttribute('src', url);
+
+    const videoReady = () => {
+      observer.next(video);
+      observer.complete();
+    };
+
+    if (video.readyState) {
+      videoReady();
+    } else {
+      video.addEventListener('loadedmetadata', videoReady);
+    }
   });
 };
