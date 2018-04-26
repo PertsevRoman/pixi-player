@@ -9,48 +9,55 @@ const LOADED_METADATA_EVENT = `loadedmetadata`;
 
 /**
  *
- * @param {HTMLVideoElement} video
+ * @param {PIXI.Sprite} backgroundSprite
  * @param {number} rendererWidth
  * @param {number} rendererHeight
- * @param {boolean} muted
  */
-const initBackgroundTexture = (video: HTMLVideoElement, rendererWidth: number, rendererHeight: number, muted = false) => {
-  return Observable.create(observer => {
-    const texture = PIXI.Texture.fromVideo(video);
+const backgroundPosite = function (backgroundSprite: PIXI.Sprite, rendererWidth: number, rendererHeight: number) {
+  const texture = backgroundSprite.texture;
+  const baseTexture = texture.baseTexture as PIXI.VideoBaseTexture;
 
-    const videoBaseTexture = texture.baseTexture as PIXI.VideoBaseTexture;
+  const videoWidth = baseTexture.source.videoWidth;
+  const videoHeight = baseTexture.source.videoHeight;
 
-    const videoReadyCallback = () => {
-      const videoSprite = new PIXI.Sprite(texture);
+  if (rendererWidth / rendererHeight < videoWidth / videoHeight) {
+    backgroundSprite.width = rendererWidth;
+    backgroundSprite.height = (videoHeight / videoWidth) * rendererWidth;
+  } else {
+    backgroundSprite.width = (videoWidth / videoHeight) * rendererHeight;
+    backgroundSprite.height = rendererHeight;
+  }
 
-      const videoWidth = videoBaseTexture.source.videoWidth;
-      const videoHeight = videoBaseTexture.source.videoHeight;
+  backgroundSprite.anchor.x = .5;
+  backgroundSprite.anchor.y = .5;
 
-      videoBaseTexture.source.muted = muted;
+  backgroundSprite.x = rendererWidth / 2;
+  backgroundSprite.y = rendererHeight / 2;
+};
 
-      if (rendererWidth / rendererHeight < videoWidth / videoHeight) {
-        videoSprite.width = rendererWidth;
-        videoSprite.height = (videoHeight / videoWidth) * rendererWidth;
-      } else {
-        videoSprite.width = (videoWidth / videoHeight) * rendererHeight;
-        videoSprite.height = rendererHeight;
-      }
+/**
+ *
+ * @param {PIXI.Sprite} cameraSprite
+ * @param {number} rendererWidth
+ * @param {number} rendererHeight
+ * @param {number} backgroundHeight
+ */
+const cameraPosite = function (cameraSprite: PIXI.Sprite, rendererWidth: number, rendererHeight: number, backgroundHeight: number) {
+  const texture = cameraSprite.texture;
+  const baseTexture = texture.baseTexture as PIXI.VideoBaseTexture;
 
-      videoSprite.anchor.x = .5;
-      videoSprite.anchor.y = .5;
+  const videoWidth = baseTexture.source.videoWidth;
+  const videoHeight = baseTexture.source.videoHeight;
 
-      videoSprite.x = rendererWidth / 2;
-      videoSprite.y = rendererHeight / 2;
+  const spriteWidth = rendererWidth / 4;
+  cameraSprite.width = spriteWidth;
+  cameraSprite.height = spriteWidth / (videoWidth / videoHeight);
 
-      observer.next(videoSprite);
-    };
+  cameraSprite.anchor.x = 1;
+  cameraSprite.anchor.y = 1;
 
-    if (videoBaseTexture.source.readyState) {
-      videoReadyCallback();
-    } else {
-      videoBaseTexture.source.addEventListener(LOADED_METADATA_EVENT, videoReadyCallback);
-    }
-  });
+  cameraSprite.x = rendererWidth;
+  cameraSprite.y = rendererHeight - (rendererHeight - backgroundHeight) / 2;
 };
 
 /**
@@ -59,40 +66,23 @@ const initBackgroundTexture = (video: HTMLVideoElement, rendererWidth: number, r
  * @param {number} rendererWidth
  * @param {number} rendererHeight
  * @param {number} backgroundHeight
- * @param muted
  * @return {any}
  */
-const initCameraTexture = (video: HTMLVideoElement, rendererWidth: number, rendererHeight: number, backgroundHeight: number = 0, muted = false) => {
+const initVideoTexture = (video: HTMLVideoElement) => {
   return Observable.create(observer => {
-    const camTex = PIXI.Texture.fromVideo(video);
-    const videoBaseTexture = camTex.baseTexture as PIXI.VideoBaseTexture;
-
-    if (!backgroundHeight) {
-      return initBackgroundTexture(video, rendererWidth, rendererHeight, muted);
-    }
+    const texture = PIXI.Texture.fromVideo(video);
 
     const videoReadyCallback = () => {
-      const cameraSprite = new PIXI.Sprite(camTex);
-
-      const videoWidth = videoBaseTexture.source.videoWidth;
-      const videoHeight = videoBaseTexture.source.videoHeight;
-
-      cameraSprite.width = 200;
-      cameraSprite.height = 200 / (videoWidth / videoHeight);
-
-      cameraSprite.anchor.x = 1;
-      cameraSprite.anchor.y = 1;
-
-      cameraSprite.x = rendererWidth;
-      cameraSprite.y = rendererHeight - (rendererHeight - backgroundHeight) / 2;
+      const cameraSprite = new PIXI.Sprite(texture);
 
       observer.next(cameraSprite);
+      observer.complete();
     };
 
-    if (videoBaseTexture.source.readyState) {
+    if (video.readyState) {
       videoReadyCallback();
     } else {
-      videoBaseTexture.source.addEventListener(LOADED_METADATA_EVENT, videoReadyCallback);
+      video.addEventListener(LOADED_METADATA_EVENT, videoReadyCallback);
     }
   });
 };
@@ -129,21 +119,25 @@ export class AppComponent implements OnInit {
     const container = new PIXI.Container();
     this.app.stage.addChild(container);
 
-    forkJoin(
+    const RENDERER_WIDTH = this.app.renderer.width;
+    const RENDERER_HEIGHT = this.app.renderer.height;
+
+    forkJoin<HTMLVideoElement, HTMLVideoElement>(
       makeUrlVideo(this.videoUrls[0], true),
       makeDeviceVideo("fake"),
     ).subscribe(([backVideo, camVideo]) => {
-      initBackgroundTexture(backVideo as HTMLVideoElement, this.app.renderer.width, this.app.renderer.height, true).subscribe(backSprite => {
-        initCameraTexture(camVideo as HTMLVideoElement, this.app.renderer.width,
-          this.app.renderer.height, backSprite.height).subscribe(camSprite => {
-            (backSprite as any).zOrder = 1;
-            (camSprite as any).zOrder = 2;
+      forkJoin<PIXI.Sprite, PIXI.Sprite>(
+        initVideoTexture(backVideo),
+        initVideoTexture(camVideo),
+      ).subscribe(([backSprite, camSprite]) => {
+        backgroundPosite(backSprite, RENDERER_WIDTH, RENDERER_HEIGHT);
+        cameraPosite(camSprite, RENDERER_WIDTH, RENDERER_HEIGHT, backSprite.height);
 
-            container.addChild(backSprite);
-            container.addChild(camSprite);
-        }, err => {
-          console.error(err);
-        });
+        (backSprite as any).zOrder = 1;
+        (camSprite as any).zOrder = 2;
+
+        container.addChild(backSprite);
+        container.addChild(camSprite);
       });
     });
   }
