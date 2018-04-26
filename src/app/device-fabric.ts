@@ -26,7 +26,7 @@ const makeAudioTrack = (audioDevice: AudioDeviceType): Observable<MediaStreamTra
     if (audioDevice == "fake") {
       const fakeAudio = document.createElement('audio');
 
-      const audioReadyListener = (event) => {
+      const audioReadyListener = () => {
         const fakeStream: MediaStream = captureStream(fakeAudio);
         const audioTracks = fakeStream.getAudioTracks();
         if (audioTracks.length) {
@@ -35,21 +35,13 @@ const makeAudioTrack = (audioDevice: AudioDeviceType): Observable<MediaStreamTra
         } else {
           observer.error(`fake audio has no audio tracks`);
         }
-
-        if (event) {
-          fakeAudio.removeEventListener('loadedmetadata', audioReadyListener);
-        }
       };
 
-      if (fakeAudio.readyState) {
-        audioReadyListener(null);
-      } else {
-        fakeAudio.addEventListener('loadedmetadata', audioReadyListener);
-      }
+      fakeAudio.addEventListener('canplay', audioReadyListener);
 
-      fakeAudio.setAttribute('src', FAKE_AUDIO_PATH);
       fakeAudio.setAttribute('autoplay', `autoplay`);
       fakeAudio.setAttribute('loop', `loop`);
+      fakeAudio.setAttribute('src', FAKE_AUDIO_PATH);
     } else if (isString(audioDevice)) {
       navigator.mediaDevices.getUserMedia({
         video: false,
@@ -79,7 +71,7 @@ const makeVideoTrack = (videoDevice: VideoType): Observable<MediaStreamTrack> =>
     if (videoDevice == "fake") {
       const fakeVideo = document.createElement('video');
 
-      const videoReadyListener = (event) => {
+      const videoReadyListener = () => {
         const fakeStream: MediaStream = captureStream(fakeVideo);
         const videoTracks = fakeStream.getVideoTracks();
         if (videoTracks.length) {
@@ -89,20 +81,13 @@ const makeVideoTrack = (videoDevice: VideoType): Observable<MediaStreamTrack> =>
           observer.error(`fake video has no video tracks`);
         }
 
-        if (event) {
-          fakeVideo.removeEventListener('loadedmetadata', videoReadyListener);
-        }
       };
 
-      if (fakeVideo.readyState) {
-        videoReadyListener(null);
-      } else {
-        fakeVideo.addEventListener('loadedmetadata', videoReadyListener);
-      }
+      fakeVideo.addEventListener('canplay', videoReadyListener);
 
-      fakeVideo.setAttribute('src', FAKE_VIDEO_PATH);
       fakeVideo.setAttribute('autoplay', `autoplay`);
       fakeVideo.setAttribute('loop', `loop`);
+      fakeVideo.setAttribute('src', FAKE_VIDEO_PATH);
       fakeVideo.muted = true;
     } else if (videoDevice == "screen") {
       // capture screen
@@ -177,10 +162,10 @@ export const makeDeviceVideo = (videoDevice: VideoType, audioDevide: AudioDevice
         observer.complete();
       };
 
-      if (video.readyState) {
+      video.addEventListener('canplay', loadedVideoCallback);
+
+      if (video.readyState >= 1) {
         loadedVideoCallback();
-      } else {
-        video.addEventListener('loadedmetadata', loadedVideoCallback);
       }
     });
   });
@@ -209,7 +194,7 @@ export const makeUrlVideo = (url: string, autoplay = false) => {
     if (video.readyState) {
       videoReady();
     } else {
-      video.addEventListener('loadedmetadata', videoReady);
+      video.addEventListener('canplay', videoReady);
     }
   });
 };

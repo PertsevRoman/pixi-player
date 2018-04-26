@@ -5,7 +5,7 @@ import * as PIXI from 'pixi.js';
 import {makeDeviceVideo, makeUrlVideo} from "./device-fabric";
 import {forkJoin} from "rxjs/observable/forkJoin";
 
-const LOADED_METADATA_EVENT = `loadedmetadata`;
+const CAN_PLAY_EVENT = `canplay`;
 
 
 /**
@@ -98,7 +98,7 @@ const makeVideoTexture = (video: HTMLVideoElement) => {
     if (video.readyState) {
       videoReadyCallback();
     } else {
-      video.addEventListener(LOADED_METADATA_EVENT, videoReadyCallback);
+      video.addEventListener(CAN_PLAY_EVENT, videoReadyCallback);
     }
   });
 };
@@ -143,6 +143,7 @@ export class AppComponent implements OnInit {
       makeDeviceVideo("fake"),
     ).subscribe(([backVideo, camVideo]) => {
       backVideo.muted = true;
+
       forkJoin<PIXI.Sprite, PIXI.Sprite>(
         makeVideoTexture(backVideo),
         makeVideoTexture(camVideo),
