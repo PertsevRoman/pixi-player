@@ -19,10 +19,10 @@ export const captureStream = (element: HTMLMediaElement): MediaStream => {
 /**
  *
  * @param {VideoType} videoDevice
- * @param {AudioDeviceType} audioDevide
+ * @param {AudioDeviceType} audioDevice
  * @return {Observable<MediaStream>}
  */
-export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: AudioDeviceType = null): Observable<MediaStream> => {
+export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevice: AudioDeviceType = null): Observable<MediaStream> => {
   return Observable.create(observer => {
     const mediaStream = new MediaStream();
 
@@ -70,7 +70,7 @@ export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: Audio
       });
     }
 
-    if (audioDevide == "fake") {
+    if (audioDevice == "fake") {
       const fakeAudio = document.createElement('audio');
       fakeAudio.setAttribute('src', FAKE_AUDIO_PATH);
       fakeAudio.setAttribute('autoplay', `autoplay`);
@@ -91,11 +91,11 @@ export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: Audio
       } else {
         fakeAudio.addEventListener('loadedmetadata', videoReadyListener);
       }
-    } else if (isString(audioDevide)) {
+    } else if (isString(audioDevice)) {
       navigator.mediaDevices.getUserMedia({
         video: false,
         audio: {
-          deviceId: audioDevide
+          deviceId: audioDevice
         }
       }).then((stream) => {
         const audioTracks = stream.getAudioTracks();
@@ -108,6 +108,7 @@ export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: Audio
     }
 
     observer.next(mediaStream);
+    observer.complete();
   });
 };
 
