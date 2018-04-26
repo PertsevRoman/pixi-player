@@ -156,6 +156,8 @@ export class AppComponent implements OnInit {
           this.app.renderer.height, backSprite.height).subscribe(camSprite => {
           (camSprite as any).zOrder = 2;
           container.addChild(camSprite);
+        }, err => {
+            console.error(err);
         });
       });
     });

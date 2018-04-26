@@ -35,8 +35,13 @@ export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: Audio
 
       const videoReadyListener = () => {
         const fakeStream: MediaStream = captureStream(fakeVideo);
-        const videoTrack = fakeStream.getVideoTracks()[0];
-        mediaStream.addTrack(videoTrack);
+        const videoTracks = fakeStream.getVideoTracks();
+        if (videoTracks.length) {
+          const videoTrack = videoTracks[0];
+          mediaStream.addTrack(videoTrack);
+        } else {
+          observer.error(`fake video has no video tracks`);
+        }
       };
 
       if (fakeVideo.readyState) {
@@ -53,7 +58,15 @@ export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: Audio
           deviceId: videoDevice
         }
       }).then((stream) => {
-        mediaStream.addTrack(stream.getVideoTracks()[0]);
+        const videoTracks = stream.getVideoTracks();
+
+        if (videoTracks.length) {
+          mediaStream.addTrack(videoTracks[0]);
+        } else {
+          observer.error(`getUserMedia() not returned video tracks`);
+        }
+      }).catch(err => {
+          observer.error(err);
       });
     }
 
@@ -65,7 +78,12 @@ export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: Audio
 
       const videoReadyListener = () => {
         const fakeStream: MediaStream = captureStream(fakeAudio);
-        mediaStream.addTrack(fakeStream.getAudioTracks()[0]);
+        const audioTracks = fakeStream.getAudioTracks();
+        if (audioTracks.length) {
+          mediaStream.addTrack(audioTracks[0]);
+        } else {
+          observer.error(`fake audio has no audio tracks`);
+        }
       };
 
       if (fakeAudio.readyState) {
@@ -80,7 +98,12 @@ export const makeDeviceMediaStream = (videoDevice: VideoType, audioDevide: Audio
           deviceId: audioDevide
         }
       }).then((stream) => {
-        mediaStream.addTrack(stream.getAudioTracks()[0]);
+        const audioTracks = stream.getAudioTracks();
+        if (audioTracks.length) {
+          mediaStream.addTrack(audioTracks[0]);
+        } else {
+          observer.error(`getUserMedia() not returned audio tracks`);
+        }
       });
     }
 
