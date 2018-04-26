@@ -4,21 +4,22 @@ import {Observable} from "rxjs/Observable";
 
 import * as PIXI from 'pixi.js';
 
+const LOADED_METADATA_EVENT = `loadedmetadata`;
+
 /**
  *
- * @param url
- * @param rendererWidth
- * @param rendererHeight
- * @param muted
- * @return {Observable<PIXI.Sprite>}
+ * @param {HTMLVideoElement} video
+ * @param {number} rendererWidth
+ * @param {number} rendererHeight
+ * @param {boolean} muted
  */
-const initVideoTexture = (url: string, rendererWidth: number, rendererHeight: number, muted = false): Observable<PIXI.Sprite> => {
+const initBackgroundTexture = (video: HTMLVideoElement, rendererWidth: number, rendererHeight: number, muted = false) => {
   return Observable.create(observer => {
-    const texture = PIXI.Texture.fromVideoUrl(url);
+    const texture = PIXI.Texture.fromVideo(video);
 
     const videoBaseTexture = texture.baseTexture as PIXI.VideoBaseTexture;
 
-    videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
+    const videoReadyCallback = () => {
       const videoSprite = new PIXI.Sprite(texture);
 
       const videoWidth = videoBaseTexture.source.videoWidth;
@@ -41,24 +42,52 @@ const initVideoTexture = (url: string, rendererWidth: number, rendererHeight: nu
       videoSprite.y = rendererHeight / 2;
 
       observer.next(videoSprite);
-    });
+    };
+
+    if (videoBaseTexture.source.readyState) {
+      videoReadyCallback();
+    } else {
+      videoBaseTexture.source.addEventListener(LOADED_METADATA_EVENT, videoReadyCallback);
+    }
   });
 };
 
 /**
  *
- * @param {HTMLVideoElement} camVideo
- * @param {number} appWidth
- * @param {number} appHeight
+ * @param url
+ * @param rendererWidth
+ * @param rendererHeight
+ * @param muted
+ * @return {Observable<PIXI.Sprite>}
+ */
+const initVideoTexture = (url: string, rendererWidth: number, rendererHeight: number, muted = false): Observable<PIXI.Sprite> => {
+  const video = document.createElement('video');
+  video.setAttribute(`src`, url);
+  video.setAttribute('autoplay', `autoplay`);
+  video.setAttribute('loop', `loop`);
+
+  return initBackgroundTexture(video, rendererWidth, rendererHeight, muted);
+};
+
+/**
+ *
+ * @param {HTMLVideoElement} video
+ * @param {number} rendererWidth
+ * @param {number} rendererHeight
  * @param {number} backgroundHeight
+ * @param muted
  * @return {any}
  */
-const initCameraTexture = (camVideo: HTMLVideoElement, appWidth: number, appHeight: number, backgroundHeight: number) => {
+const initCameraTexture = (video: HTMLVideoElement, rendererWidth: number, rendererHeight: number, backgroundHeight: number = 0, muted = false) => {
   return Observable.create(observer => {
-    const camTex = PIXI.Texture.fromVideo(camVideo);
+    const camTex = PIXI.Texture.fromVideo(video);
     const videoBaseTexture = camTex.baseTexture as PIXI.VideoBaseTexture;
 
-    videoBaseTexture.source.addEventListener(`loadedmetadata`, () => {
+    if (!backgroundHeight) {
+      return initBackgroundTexture(video, rendererWidth, rendererHeight, muted);
+    }
+
+    const videoReadyCallback = () => {
       const cameraSprite = new PIXI.Sprite(camTex);
 
       const videoWidth = videoBaseTexture.source.videoWidth;
@@ -70,11 +99,17 @@ const initCameraTexture = (camVideo: HTMLVideoElement, appWidth: number, appHeig
       cameraSprite.anchor.x = 1;
       cameraSprite.anchor.y = 1;
 
-      cameraSprite.x = appWidth;
-      cameraSprite.y = appHeight - (appHeight - backgroundHeight) / 2;
+      cameraSprite.x = rendererWidth;
+      cameraSprite.y = rendererHeight - (rendererHeight - backgroundHeight) / 2;
 
       observer.next(cameraSprite);
-    });
+    };
+
+    if (videoBaseTexture.source.readyState) {
+      videoReadyCallback();
+    } else {
+      videoBaseTexture.source.addEventListener(LOADED_METADATA_EVENT, videoReadyCallback);
+    }
   });
 };
 
@@ -107,7 +142,7 @@ export class AppComponent implements OnInit {
       height: this.canvasHeight
     });
 
-    const container  = new PIXI.Container();
+    const container = new PIXI.Container();
     this.app.stage.addChild(container);
 
     initVideoTexture(this.videoUrls[0], this.app.renderer.width, this.app.renderer.height, true).subscribe(backSprite => {
