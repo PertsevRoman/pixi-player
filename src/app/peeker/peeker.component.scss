@@ -1,0 +1,37 @@
+$peekElementBorder: 1px solid white;
+$peekElementBorderRadius: 3px;
+
+:host {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  right: 15px;
+  height: 40px;
+  border: 2px solid white;
+  border-radius: 5px;
+
+  padding: 4px;
+
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: flex-start;
+
+  .time-peeker {
+    flex-grow: 1;
+    border: $peekElementBorder;
+    border-radius: $peekElementBorderRadius;
+  }
+
+  .volume-toggler {
+    flex-grow: 0;
+    border: $peekElementBorder;
+    border-radius: $peekElementBorderRadius;
+
+    width: 40px;
+    margin-left: 5px;
+
+    .volume-peeker {
+    }
+  }
+}

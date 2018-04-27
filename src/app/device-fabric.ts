@@ -203,7 +203,6 @@ export const makeDeviceVideo = (videoDevice: VideoType, audioDevide: AudioDevice
 /**
  *
  * @param {string} url
- * @param autoplay
  */
 export const makeUrlVideo = (url: string) => {
   return Observable.create(observer => {
