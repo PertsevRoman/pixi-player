@@ -75,9 +75,7 @@ const makeAudioTrack = (audioDevice: AudioDeviceType): Observable<MediaStreamTra
 
       fakeAudio.setAttribute('autoplay', `autoplay`);
       fakeAudio.setAttribute('loop', `loop`);
-      xmlLoadMedia(FAKE_AUDIO_PATH).subscribe(blob => {
-        fakeAudio.src = blob;
-      });
+      fakeAudio.setAttribute('src', FAKE_AUDIO_PATH);
     } else if (isString(audioDevice)) {
       navigator.mediaDevices.getUserMedia({
         video: false,
@@ -122,9 +120,7 @@ const makeVideoTrack = (videoDevice: VideoType): Observable<MediaStreamTrack> =>
       fakeVideo.addEventListener('canplay', videoReadyListener);
       fakeVideo.setAttribute('autoplay', `autoplay`);
       fakeVideo.setAttribute('loop', `loop`);
-      xmlLoadMedia(FAKE_VIDEO_PATH).subscribe(blob => {
-        fakeVideo.src = blob;
-      })
+      fakeVideo.setAttribute('src', FAKE_VIDEO_PATH);
     } else if (videoDevice == "screen") {
       // capture screen
     } else if (isString(videoDevice)) {
