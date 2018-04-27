@@ -26,13 +26,23 @@ $backgroundColor: rgba(0, 0, 0, .3);
     border-radius: $peekElementBorderRadius;
   }
 
+  .play-toggler {
+    $togglerWidth: 40px;
+    flex-grow: 0;
+    border: $peekElementBorder;
+    border-radius: $peekElementBorderRadius;
+    margin-left: 5px;
+    width: $togglerWidth;
+    position: relative;
+  }
+
   .volume-toggler {
     $togglerWidth: 40px;
     flex-grow: 0;
     border: $peekElementBorder;
     border-radius: $peekElementBorderRadius;
-
     width: $togglerWidth;
+
     margin-left: 5px;
     position: relative;
 
