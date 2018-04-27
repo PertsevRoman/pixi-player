@@ -93,9 +93,7 @@ const makeVideoTexture = (video: HTMLVideoElement, pause = false) => {
     }
 
     const videoReadyCallback = () => {
-      const cameraSprite = new PIXI.Sprite(texture);
-
-      observer.next(cameraSprite);
+      observer.next(texture);
       observer.complete();
     };
 
@@ -143,27 +141,32 @@ export class AppComponent implements OnInit {
     const container = new PIXI.Container();
     this.app.stage.addChild(container);
 
+    const backSprite = new PIXI.Sprite();
+    const camSprite = new PIXI.Sprite();
+
     const RENDERER_WIDTH = this.app.renderer.width;
     const RENDERER_HEIGHT = this.app.renderer.height;
+
+    (backSprite as any).zOrder = 1;
+    (camSprite as any).zOrder = 2;
+
+    container.addChild(backSprite);
+    container.addChild(camSprite);
 
     forkJoin<HTMLVideoElement, HTMLVideoElement>(
       makeUrlVideo(this.videoUrls[0]),
       makeDeviceVideo("fake"),
     ).subscribe(([backVideo, camVideo]) => {
       backVideo.muted = true;
-
-      forkJoin<PIXI.Sprite, PIXI.Sprite>(
+      forkJoin<PIXI.Texture, PIXI.Texture>(
         makeVideoTexture(backVideo),
         makeVideoTexture(camVideo),
-      ).subscribe(([backSprite, camSprite]) => {
+      ).subscribe(([backTexture, camTexture]) => {
+        backSprite.texture = backTexture;
+        camSprite.texture = camTexture;
+
         backgroundPosite(backSprite, RENDERER_WIDTH, RENDERER_HEIGHT);
         cameraPosite(camSprite, RENDERER_WIDTH, RENDERER_HEIGHT, backSprite.height, backSprite.width);
-
-        (backSprite as any).zOrder = 1;
-        (camSprite as any).zOrder = 2;
-
-        container.addChild(backSprite);
-        container.addChild(camSprite);
       });
     });
   }
