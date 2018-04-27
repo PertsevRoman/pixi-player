@@ -82,11 +82,15 @@ const cameraPosite = function (cameraSprite: PIXI.Sprite,
 /**
  *
  * @param {HTMLVideoElement} video
+ * @param pause
  * @return {any}
  */
-const makeVideoTexture = (video: HTMLVideoElement) => {
+const makeVideoTexture = (video: HTMLVideoElement, pause = false) => {
   return Observable.create(observer => {
     const texture = PIXI.Texture.fromVideo(video);
+    if (pause) {
+      (texture.baseTexture as PIXI.VideoBaseTexture).source.pause();
+    }
 
     const videoReadyCallback = () => {
       const cameraSprite = new PIXI.Sprite(texture);
@@ -95,10 +99,14 @@ const makeVideoTexture = (video: HTMLVideoElement) => {
       observer.complete();
     };
 
-    if (video.readyState) {
+    if (video.srcObject) {
       videoReadyCallback();
     } else {
-      video.addEventListener(CAN_PLAY_EVENT, videoReadyCallback);
+      if (video.readyState) {
+        videoReadyCallback();
+      } else {
+        video.addEventListener(CAN_PLAY_EVENT, videoReadyCallback);
+      }
     }
   });
 };
@@ -139,7 +147,7 @@ export class AppComponent implements OnInit {
     const RENDERER_HEIGHT = this.app.renderer.height;
 
     forkJoin<HTMLVideoElement, HTMLVideoElement>(
-      makeUrlVideo(this.videoUrls[0], true),
+      makeUrlVideo(this.videoUrls[0]),
       makeDeviceVideo("fake"),
     ).subscribe(([backVideo, camVideo]) => {
       backVideo.muted = true;

@@ -10,11 +10,45 @@ const FAKE_AUDIO_PATH = `/assets/nature.aac`;
 
 /**
  *
+ * @param {string} url
+ * @return {any}
+ */
+const xmlLoadMedia = (url: string): Observable<string> => {
+  return Observable.create(observer => {
+    let req = new XMLHttpRequest();
+    req.open('GET', url, true);
+    req.responseType = "blob";
+
+    req.onload = function() {
+      let self = this as any;
+
+      if (self.status == 200) {
+        const videoBlob = URL.createObjectURL(self.response);
+
+        observer.next(videoBlob);
+        observer.complete();
+      }
+    };
+
+    req.onerror = (err) => {
+      observer.error(err);
+    };
+
+    req.send();
+  });
+};
+
+/**
+ *
  * @param {HTMLMediaElement} element
  * @return {MediaStream}
  */
-export const captureStream = (element: HTMLMediaElement): MediaStream => {
-  return (element as any).captureStream();
+export const captureStream = (element: any): MediaStream => {
+  if (element.captureStream) {
+    return (element as any).captureStream();
+  } else if (element.mozCaptureStream) {
+    return (element as any).mozCaptureStream();
+  }
 };
 
 /**
@@ -41,7 +75,9 @@ const makeAudioTrack = (audioDevice: AudioDeviceType): Observable<MediaStreamTra
 
       fakeAudio.setAttribute('autoplay', `autoplay`);
       fakeAudio.setAttribute('loop', `loop`);
-      fakeAudio.setAttribute('src', FAKE_AUDIO_PATH);
+      xmlLoadMedia(FAKE_AUDIO_PATH).subscribe(blob => {
+        fakeAudio.src = blob;
+      });
     } else if (isString(audioDevice)) {
       navigator.mediaDevices.getUserMedia({
         video: false,
@@ -72,6 +108,7 @@ const makeVideoTrack = (videoDevice: VideoType): Observable<MediaStreamTrack> =>
       const fakeVideo = document.createElement('video');
 
       const videoReadyListener = () => {
+        fakeVideo.muted = true;
         const fakeStream: MediaStream = captureStream(fakeVideo);
         const videoTracks = fakeStream.getVideoTracks();
         if (videoTracks.length) {
@@ -80,15 +117,14 @@ const makeVideoTrack = (videoDevice: VideoType): Observable<MediaStreamTrack> =>
         } else {
           observer.error(`fake video has no video tracks`);
         }
-
       };
 
       fakeVideo.addEventListener('canplay', videoReadyListener);
-
       fakeVideo.setAttribute('autoplay', `autoplay`);
       fakeVideo.setAttribute('loop', `loop`);
-      fakeVideo.setAttribute('src', FAKE_VIDEO_PATH);
-      fakeVideo.muted = true;
+      xmlLoadMedia(FAKE_VIDEO_PATH).subscribe(blob => {
+        fakeVideo.src = blob;
+      })
     } else if (videoDevice == "screen") {
       // capture screen
     } else if (isString(videoDevice)) {
@@ -155,6 +191,7 @@ export const makeDeviceVideo = (videoDevice: VideoType, audioDevide: AudioDevice
   return Observable.create(observer => {
     makeDeviceMediaStream(videoDevice, audioDevide).subscribe(mediaStream => {
       const video = document.createElement('video');
+      video.setAttribute('autoplay', 'autoplay');
       video.srcObject = mediaStream;
 
       const loadedVideoCallback = () => {
@@ -162,11 +199,7 @@ export const makeDeviceVideo = (videoDevice: VideoType, audioDevide: AudioDevice
         observer.complete();
       };
 
-      video.addEventListener('canplay', loadedVideoCallback);
-
-      if (video.readyState >= 1) {
-        loadedVideoCallback();
-      }
+      loadedVideoCallback();
     });
   });
 };
@@ -176,25 +209,15 @@ export const makeDeviceVideo = (videoDevice: VideoType, audioDevide: AudioDevice
  * @param {string} url
  * @param autoplay
  */
-export const makeUrlVideo = (url: string, autoplay = false) => {
+export const makeUrlVideo = (url: string) => {
   return Observable.create(observer => {
     const video = document.createElement('video');
 
-    if (autoplay) {
-      video.setAttribute('autoplay', `autoplay`);
-    }
+    xmlLoadMedia(url).subscribe(blob => {
+      video.src = blob;
 
-    video.setAttribute('src', url);
-
-    const videoReady = () => {
       observer.next(video);
       observer.complete();
-    };
-
-    if (video.readyState) {
-      videoReady();
-    } else {
-      video.addEventListener('canplay', videoReady);
-    }
+    });
   });
 };
