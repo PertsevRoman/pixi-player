@@ -1,5 +1,6 @@
 $peekElementBorder: 1px solid white;
 $peekElementBorderRadius: 3px;
+$backgroundColor: rgba(0, 0, 0, .3);
 
 :host {
   position: absolute;
@@ -17,6 +18,8 @@ $peekElementBorderRadius: 3px;
   align-items: stretch;
   justify-content: flex-start;
 
+  background-color: $backgroundColor;
+
   .time-peeker {
     flex-grow: 1;
     border: $peekElementBorder;
@@ -24,14 +27,46 @@ $peekElementBorderRadius: 3px;
   }
 
   .volume-toggler {
+    $togglerWidth: 40px;
     flex-grow: 0;
     border: $peekElementBorder;
     border-radius: $peekElementBorderRadius;
 
-    width: 40px;
+    width: $togglerWidth;
     margin-left: 5px;
+    position: relative;
+
+    &:hover {
+      .volume-peeker {
+        display: block;
+      }
+    }
 
     .volume-peeker {
+      $volumePeekerHeight: 120px;
+      display: none;
+
+      .volume-peeker-face {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 10px;
+
+        border: $peekElementBorder;
+        border-radius: $peekElementBorderRadius;
+        background-color: $backgroundColor;
+      }
+
+      width: $togglerWidth;
+      position: absolute;
+      height: $volumePeekerHeight;
+      left: -1;
+      top: -121px;
+
+      &:hover {
+        display: block;
+      }
     }
   }
 }
