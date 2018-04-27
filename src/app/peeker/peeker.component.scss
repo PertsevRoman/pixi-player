@@ -26,7 +26,7 @@ $backgroundColor: rgba(0, 0, 0, .3);
     border-radius: $peekElementBorderRadius;
   }
 
-  .play-toggler {
+  .play-toggler, .stop {
     $togglerWidth: 40px;
     flex-grow: 0;
     border: $peekElementBorder;
